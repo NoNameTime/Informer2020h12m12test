@@ -116,8 +116,7 @@ class Exp_Informer(Exp_Basic):
         for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(vali_loader):
             pred, true = self._process_one_batch(
                 vali_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
-            # Assuming Faithful vector representation, loss becomes loss wrt to the first element of the faithful vector.
-            loss = criterion(pred[:,:,::9].detach().cpu(), true[:,:,::9].detach().cpu())
+            loss = criterion(pred.detach().cpu(), true.detach().cpu())
             total_loss.append(loss)
         total_loss = np.average(total_loss)
         self.model.train()
@@ -157,11 +156,9 @@ class Exp_Informer(Exp_Basic):
                     train_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
                 loss = criterion(pred, true)
                 train_loss.append(loss.item())
-                # Calculating loss on the first element of faithful vector. Note however that the training will be done on total loss over the faithful vector.
-                actual_loss = criterion(pred[:,:,::9], true[:,:,::9])
                 
                 if (i+1) % 100==0:
-                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, actual_loss.item()))
+                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
                     speed = (time.time()-time_now)/iter_count
                     left_time = speed*((self.args.train_epochs - epoch)*train_steps - i)
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
@@ -206,10 +203,8 @@ class Exp_Informer(Exp_Basic):
         for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(test_loader):
             pred, true = self._process_one_batch(
                 test_data, batch_x, batch_y, batch_x_mark, batch_y_mark)
-            # Changed here as well; assuming faithful vector representation of the data file [nc, m_eff+1]
-            preds.append(pred[:,:,::9].detach().cpu().numpy())
-            trues.append(true[:,:,::9].detach().cpu().numpy())
-
+            preds.append(pred.detach().cpu().numpy())
+            trues.append(true.detach().cpu().numpy())
 
         preds = np.array(preds)
         trues = np.array(trues)
